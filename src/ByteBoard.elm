@@ -23,28 +23,11 @@ port tasks =
 app : StartApp.App Model
 app =
   StartApp.start
-    { init = ( init, sendInitial )
+    { init = ( init, Effects.none )
     , update = update
     , view = view
-    , inputs = [ clicks, windowSize, mousePos ]
+    , inputs = [ clicks, positions ]
     }
-
-
-initialMailbox : Signal.Mailbox ()
-initialMailbox =
-  Signal.mailbox ()
-
-
-initialSignal : Signal ()
-initialSignal =
-  initialMailbox.signal
-
-
-sendInitial : Effects Action
-sendInitial =
-  Signal.send initialMailbox.address ()
-    |> Task.map (always Nothing)
-    |> Effects.task
 
 
 clicks : Signal Action
@@ -53,34 +36,32 @@ clicks =
     |> Signal.map (always Click)
 
 
-mousePos : Signal Action
-mousePos =
-  Mouse.position
-    |> Signal.map2 rehomeMouse Window.dimensions
-    |> Signal.map Position
+positions : Signal Action
+positions =
+  let
+    position mouse window =
+      Position (rehomeMouse mouse window) window
+  in
+    Signal.map2 position Mouse.position Window.dimensions
 
 
-rehomeMouse : ( Int, Int ) -> Point -> Point
-rehomeMouse ( w, h ) ( x, y ) =
+rehomeMouse : Point -> Size -> Point
+rehomeMouse ( x, y ) ( w, h ) =
   ( x - w // 2, h // 2 - y )
 
 
-windowSize : Signal Action
-windowSize =
-  Signal.map Window
-    <| Signal.merge
-        Window.dimensions
-        (Signal.sampleOn initialSignal Window.dimensions)
-
-
 type alias Model =
-  { window : Point
+  { window : Size
   , mouse : Point
   , forms : List Form
   }
 
 
 type alias Point =
+  ( Int, Int )
+
+
+type alias Size =
   ( Int, Int )
 
 
@@ -99,8 +80,7 @@ init =
 type Action
   = Nothing
   | Click
-  | Position Point
-  | Window ( Int, Int )
+  | Position Size Point
 
 
 update : Action -> Model -> ( Model, Effects Action )
@@ -117,11 +97,8 @@ pureUpdate action model =
     Click ->
       { model | forms = push model.forms (Blob model.mouse) }
 
-    Position pos ->
-      { model | mouse = pos }
-
-    Window size ->
-      { model | window = size }
+    Position pos size ->
+      { model | mouse = pos, window = size }
 
 
 view : Signal.Address Action -> Model -> Html.Html
