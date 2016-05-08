@@ -7,6 +7,7 @@ import Window
 import Effects exposing (Effects, Never)
 import Task exposing (Task)
 import Html exposing (div, button, text)
+import Html.Attributes as Attr
 import StartApp
 
 
@@ -78,8 +79,7 @@ init =
 
 
 type Action
-  = Nothing
-  | Click
+  = Click
   | Position Size Point
 
 
@@ -91,9 +91,6 @@ update action model =
 pureUpdate : Action -> Model -> Model
 pureUpdate action model =
   case action of
-    Nothing ->
-      model
-
     Click ->
       { model | forms = push model.forms (Blob model.mouse) }
 
@@ -102,13 +99,39 @@ pureUpdate action model =
 
 
 view : Signal.Address Action -> Model -> Html.Html
-view address { window, mouse, forms } =
-  div
-    []
-    [ text (toString mouse)
-    , text (toString window)
-    , viewForms window forms
-    ]
+view address model =
+  let
+    { window, mouse, forms } =
+      model
+
+    ( w, h ) =
+      window
+
+    ( canvasW, sidebarW ) =
+      sidebarWidth w
+  in
+    div
+      []
+      [ div
+          [ Attr.style [ "width" => toString canvasW, "float" => "left" ]
+          ]
+          [ viewForms ( canvasW, h ) model.forms
+          ]
+      , div
+          [ Attr.style [ "width" => toString sidebarW ]
+          ]
+          [ text <| toString ( window, mouse ) ]
+      ]
+
+
+sidebarWidth : Int -> ( Int, Int )
+sidebarWidth w =
+  ( w - 300, 300 )
+
+
+(=>) : a -> b -> ( a, b )
+(=>) k v =
+  ( k, v )
 
 
 viewForms : ( Int, Int ) -> List Form -> Html.Html
