@@ -1,54 +1,18 @@
-module Main (..) where
+module ByteBoard (..) where
 
 import Color
 import Graphics.Collage as Collage
 import Mouse
-import Window
-import Effects exposing (Effects, Never)
-import Task exposing (Task)
+import Effects exposing (Effects)
 import Html exposing (div, button, text)
 import Html.Attributes as Attr
-import StartApp
-
-
-main : Signal Html.Html
-main =
-  app.html
-
-
-port tasks : Signal (Task.Task Never ())
-port tasks =
-  app.tasks
-
-
-app : StartApp.App Model
-app =
-  StartApp.start
-    { init = ( init, Effects.none )
-    , update = update
-    , view = view
-    , inputs = [ clicks, positions ]
-    }
+import Stuff exposing ((=>), push, tuplemap2)
 
 
 clicks : Signal Action
 clicks =
   Mouse.clicks
     |> Signal.map (always Click)
-
-
-positions : Signal Action
-positions =
-  let
-    position mouse window =
-      Position (rehomeMouse mouse window) window
-  in
-    Signal.map2 position Mouse.position Window.dimensions
-
-
-rehomeMouse : Point -> Size -> Point
-rehomeMouse ( x, y ) ( w, h ) =
-  ( x - w // 2, h // 2 - y )
 
 
 type alias Model =
@@ -129,11 +93,6 @@ sidebarWidth w =
   ( w - 300, 300 )
 
 
-(=>) : a -> b -> ( a, b )
-(=>) k v =
-  ( k, v )
-
-
 viewForms : ( Int, Int ) -> List Form -> Html.Html
 viewForms ( width, height ) forms =
   forms
@@ -149,13 +108,3 @@ viewForm form =
       Collage.circle 30
         |> Collage.filled Color.red
         |> Collage.move (tuplemap2 toFloat pos)
-
-
-tuplemap2 : (a -> b) -> ( a, a ) -> ( b, b )
-tuplemap2 f ( x, y ) =
-  ( f x, f y )
-
-
-push : List a -> a -> List a
-push l x =
-  l ++ [ x ]
