@@ -14,11 +14,6 @@ main =
   app.html
 
 
-port tasks : Signal (Task.Task Never ())
-port tasks =
-  app.tasks
-
-
 app : StartApp.App BB.Model
 app =
   StartApp.start
@@ -32,3 +27,11 @@ app =
 positions : Signal BB.Action
 positions =
   Signal.map2 BB.Position Mouse.position Window.dimensions
+
+
+port tasks : Signal (Task.Task Never ())
+port tasks =
+  app.tasks
+
+
+port swap : Signal Bool

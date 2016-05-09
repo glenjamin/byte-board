@@ -5,6 +5,7 @@ import Graphics.Collage as Collage
 import Mouse
 import Effects exposing (Effects)
 import Html exposing (div, button, text)
+import Html.Events exposing (onClick)
 import Html.Attributes as Attr
 import Stuff exposing ((=>), push, tuplemap2)
 
@@ -78,6 +79,7 @@ view address model =
       []
       [ div
           [ Attr.style [ "width" => toString canvasW, "float" => "left" ]
+          , onClick address Click
           ]
           [ viewForms ( canvasW, h ) model.forms
           ]
