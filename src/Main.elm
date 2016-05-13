@@ -1,26 +1,23 @@
-module Main (main) where
+module Main exposing (main)
 
 import Mouse
 import Window
 import Html
-import Effects exposing (Effects, Never)
 import Task
-import StartApp
+import Html.App
 import ByteBoard as BB
 
 
-main : Signal Html.Html
 main =
   app.html
 
 
-app : StartApp.App BB.Model
 app =
-  StartApp.start
-    { init = ( BB.init, Effects.none )
+  Html.App.program
+    { init = BB.init, Cmd.none )
     , update = BB.update
     , view = BB.view
-    , inputs = [ positions ]
+    , subscriptions = \_ -> Sub.none
     }
 
 

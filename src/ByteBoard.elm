@@ -1,9 +1,8 @@
-module ByteBoard (..) where
+module ByteBoard exposing (..)
 
 import Color
-import Graphics.Collage as Collage
+import Collage
 import Mouse
-import Effects exposing (Effects)
 import Html exposing (div, button, text)
 import Html.Events exposing (onClick)
 import Html.Attributes as Attr

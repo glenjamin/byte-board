@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/glenjamin/byte-board#readme",
   "devDependencies": {
-    "elm": "^0.16.0",
+    "elm": "^0.17.0",
     "elm-hot-loader": "^0.2.2",
     "elm-webpack-loader": "^2.0.1",
     "express": "^4.13.4",

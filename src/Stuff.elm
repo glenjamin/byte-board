@@ -1,4 +1,4 @@
-module Stuff (..) where
+module Stuff exposing (..)
 
 
 tuplemap2 : (a -> b) -> ( a, a ) -> ( b, b )
