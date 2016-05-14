@@ -5,7 +5,7 @@ import Json.Decode as Json exposing ((:=))
 import Html exposing (Html, p, div, button, text)
 import Html.Events exposing (on, onClick)
 import Html.Attributes as Attr
-import Stuff exposing ((=>), push, tuplemap2)
+import Stuff exposing ((=>), (??), push, tuplemap2)
 import Task
 import Window
 import ByteBoard.Drawing exposing (Form(..), viewForms)
@@ -80,24 +80,55 @@ view model =
         { width, height } =
             window
 
-        ( canvasW, sidebarW ) =
-            sidebarWidth width
+        sidebarW =
+            300
+
+        canvasW =
+            width - sidebarW
     in
         div []
             [ div
-                [ Attr.style [ "width" => toString canvasW, "float" => "left" ]
-                , onClick Click
-                , onMouseMove MousePosition
+                [ Attr.style
+                    [ "position" => "absolute"
+                    , "left" => "0"
+                    , "right" => px sidebarW
+                    , "top" => "0"
+                    , "bottom" => "0"
+                    , "overflow" => "hidden"
+                    ]
                 ]
-                [ viewForms ( canvasW, height ) model.forms
+                [ div
+                    [ onClick Click
+                    , onMouseMove MousePosition
+                    ]
+                    [ (width > 0)
+                        ?? viewForms ( canvasW, height ) model.forms
+                    ]
                 ]
             , div
-                [ Attr.style [ "width" => toString sidebarW ]
+                [ Attr.style
+                    [ "position" => "absolute"
+                    , "top" => "0"
+                    , "bottom" => "0"
+                    , "width" => px sidebarW
+                    , "right" => "0"
+                    ]
                 ]
-                [ p [] [ text <| toString window ]
-                , p [] [ text <| toString mouse ]
-                ]
+                [ viewSidebar model ]
             ]
+
+
+viewSidebar : Model -> Html Msg
+viewSidebar { window, mouse } =
+    div []
+        [ p [] [ text <| toString window ]
+        , p [] [ text <| toString mouse ]
+        ]
+
+
+px : number -> String
+px n =
+    (toString n) ++ "px"
 
 
 onMouseMove : (Position -> Msg) -> Html.Attribute Msg
@@ -108,8 +139,3 @@ onMouseMove msg =
 relativeMousePosition : Json.Decoder Position
 relativeMousePosition =
     Json.object2 Position ("offsetX" := Json.int) ("offsetY" := Json.int)
-
-
-sidebarWidth : Int -> ( Int, Int )
-sidebarWidth w =
-    ( w - 300, 300 )
