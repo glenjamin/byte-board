@@ -1,8 +1,6 @@
 module ByteBoard exposing (init, subscriptions, update, view)
 
-import Color
-import Collage
-import Element
+import Debug
 import Json.Decode as Json exposing ((:=))
 import Html exposing (Html, p, div, button, text)
 import Html.Events exposing (on, onClick)
@@ -10,6 +8,7 @@ import Html.Attributes as Attr
 import Stuff exposing ((=>), push, tuplemap2)
 import Task
 import Window
+import ByteBoard.Drawing exposing (Form(..), viewForms)
 
 
 type alias Model =
@@ -27,10 +26,6 @@ type alias Size =
     Window.Size
 
 
-type Form
-    = Blob Position
-
-
 init : ( Model, Cmd Msg )
 init =
     { window = { width = 0, height = 0 }
@@ -40,8 +35,11 @@ init =
         ! [ initialWindowSize ]
 
 
+initialWindowSize : Cmd Msg
 initialWindowSize =
-    Task.perform (always Ignore) WindowSize Window.size
+    Task.perform (\_ -> Debug.crash "no window?")
+        WindowSize
+        Window.size
 
 
 subscriptions : Model -> Sub Msg
@@ -50,8 +48,7 @@ subscriptions model =
 
 
 type Msg
-    = Ignore
-    | Click
+    = Click
     | MousePosition Position
     | WindowSize Size
 
@@ -64,9 +61,6 @@ update action model =
 pureUpdate : Msg -> Model -> Model
 pureUpdate msg model =
     case msg of
-        Ignore ->
-            model
-
         MousePosition pos ->
             { model | mouse = pos }
 
@@ -119,20 +113,3 @@ relativeMousePosition =
 sidebarWidth : Int -> ( Int, Int )
 sidebarWidth w =
     ( w - 300, 300 )
-
-
-viewForms : ( Int, Int ) -> List Form -> Html Msg
-viewForms ( width, height ) forms =
-    forms
-        |> List.map viewForm
-        |> Collage.collage width height
-        |> Element.toHtml
-
-
-viewForm : Form -> Collage.Form
-viewForm form =
-    case form of
-        Blob { x, y } ->
-            Collage.circle 30
-                |> Collage.filled Color.red
-                |> Collage.move ( toFloat x, toFloat y )
