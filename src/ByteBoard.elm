@@ -2,110 +2,135 @@ module ByteBoard exposing (..)
 
 import Color
 import Collage
+import Element
 import Mouse
-import Html exposing (div, button, text)
-import Html.Events exposing (onClick)
+import Json.Decode as Json
+import Html exposing (Html, p, div, button, text)
+import Html.Events exposing (on, onClick)
 import Html.Attributes as Attr
 import Stuff exposing ((=>), push, tuplemap2)
-
-
-clicks : Signal Action
-clicks =
-  Mouse.clicks
-    |> Signal.map (always Click)
+import Task
+import Window
 
 
 type alias Model =
-  { window : Size
-  , mouse : Point
-  , forms : List Form
-  }
+    { window : Size
+    , mouse : Position
+    , forms : List Form
+    }
 
 
-type alias Point =
-  ( Int, Int )
+type alias Position =
+    Mouse.Position
 
 
 type alias Size =
-  ( Int, Int )
+    Window.Size
 
 
 type Form
-  = Blob Point
+    = Blob Position
 
 
-init : Model
+init : ( Model, Cmd Msg )
 init =
-  { window = ( 0, 0 )
-  , mouse = ( 0, 0 )
-  , forms = [ Blob ( 0, 0 ) ]
-  }
+    { window = { width = 0, height = 0 }
+    , mouse = { x = 0, y = 0 }
+    , forms = [ Blob { x = 0, y = 0 } ]
+    }
+        ! [ Task.perform ignore1 WindowSize Window.size
+          ]
 
 
-type Action
-  = Click
-  | Position Size Point
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch [ Window.resizes WindowSize ]
 
 
-update : Action -> Model -> ( Model, Effects Action )
+ignore1 : a -> Msg
+ignore1 _ =
+    Ignore
+
+
+type Msg
+    = Ignore
+    | Click
+    | MousePosition Position
+    | WindowSize Size
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
-  ( pureUpdate action model, Effects.none )
+    ( pureUpdate action model, Cmd.none )
 
 
-pureUpdate : Action -> Model -> Model
-pureUpdate action model =
-  case action of
-    Click ->
-      { model | forms = push model.forms (Blob model.mouse) }
+pureUpdate : Msg -> Model -> Model
+pureUpdate msg model =
+    case msg of
+        Ignore ->
+            model
 
-    Position pos size ->
-      { model | mouse = pos, window = size }
+        MousePosition pos ->
+            { model | mouse = pos }
+
+        Click ->
+            { model | forms = push model.forms (Blob model.mouse) }
+
+        WindowSize size ->
+            { model | window = size }
 
 
-view : Signal.Address Action -> Model -> Html.Html
-view address model =
-  let
-    { window, mouse, forms } =
-      model
+view : Model -> Html Msg
+view model =
+    let
+        { window, mouse, forms } =
+            model
 
-    ( w, h ) =
-      window
+        { width, height } =
+            window
 
-    ( canvasW, sidebarW ) =
-      sidebarWidth w
-  in
-    div
-      []
-      [ div
-          [ Attr.style [ "width" => toString canvasW, "float" => "left" ]
-          , onClick address Click
-          ]
-          [ viewForms ( canvasW, h ) model.forms
-          ]
-      , div
-          [ Attr.style [ "width" => toString sidebarW ]
-          ]
-          [ text <| toString ( window, mouse ) ]
-      ]
+        ( canvasW, sidebarW ) =
+            sidebarWidth width
+    in
+        div []
+            [ div
+                [ Attr.style [ "width" => toString canvasW, "float" => "left" ]
+                , onClick Click
+                , onMouseMove MousePosition
+                ]
+                [ viewForms ( canvasW, height ) model.forms
+                ]
+            , div
+                [ Attr.style [ "width" => toString sidebarW ]
+                ]
+                [ p [] [ text <| toString window ]
+                , p [] [ text <| toString mouse ]
+                ]
+            ]
+
+
+onMouseMove : (Position -> Msg) -> Html.Attribute Msg
+onMouseMove msg =
+    on "mousemove" (Json.map msg Mouse.position)
 
 
 sidebarWidth : Int -> ( Int, Int )
 sidebarWidth w =
-  ( w - 300, 300 )
+    ( w - 300, 300 )
 
 
-viewForms : ( Int, Int ) -> List Form -> Html.Html
+viewForms : ( Int, Int ) -> List Form -> Html Msg
 viewForms ( width, height ) forms =
-  forms
-    |> List.map viewForm
-    |> Collage.collage width height
-    |> Html.fromElement
+    forms
+        |> List.map viewForm
+        |> Collage.collage width height
+        |> Element.toHtml
 
 
 viewForm : Form -> Collage.Form
 viewForm form =
-  case form of
-    Blob pos ->
-      Collage.circle 30
-        |> Collage.filled Color.red
-        |> Collage.move (tuplemap2 toFloat pos)
+    case form of
+        Blob { x, y } ->
+            Collage.circle 30
+                |> Collage.filled Color.red
+                |> Collage.move ( toFloat x, toFloat y )
