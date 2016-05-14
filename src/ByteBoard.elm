@@ -1,10 +1,9 @@
-module ByteBoard exposing (..)
+module ByteBoard exposing (init, subscriptions, update, view)
 
 import Color
 import Collage
 import Element
-import Mouse
-import Json.Decode as Json
+import Json.Decode as Json exposing ((:=))
 import Html exposing (Html, p, div, button, text)
 import Html.Events exposing (on, onClick)
 import Html.Attributes as Attr
@@ -21,7 +20,7 @@ type alias Model =
 
 
 type alias Position =
-    Mouse.Position
+    { x : Int, y : Int }
 
 
 type alias Size =
@@ -36,20 +35,18 @@ init : ( Model, Cmd Msg )
 init =
     { window = { width = 0, height = 0 }
     , mouse = { x = 0, y = 0 }
-    , forms = [ Blob { x = 0, y = 0 } ]
+    , forms = [ Blob { x = -100, y = 100 } ]
     }
-        ! [ Task.perform ignore1 WindowSize Window.size
-          ]
+        ! [ initialWindowSize ]
+
+
+initialWindowSize =
+    Task.perform (always Ignore) WindowSize Window.size
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch [ Window.resizes WindowSize ]
-
-
-ignore1 : a -> Msg
-ignore1 _ =
-    Ignore
 
 
 type Msg
@@ -111,7 +108,12 @@ view model =
 
 onMouseMove : (Position -> Msg) -> Html.Attribute Msg
 onMouseMove msg =
-    on "mousemove" (Json.map msg Mouse.position)
+    on "mousemove" (Json.map msg relativeMousePosition)
+
+
+relativeMousePosition : Json.Decoder Position
+relativeMousePosition =
+    Json.object2 Position ("offsetX" := Json.int) ("offsetY" := Json.int)
 
 
 sidebarWidth : Int -> ( Int, Int )

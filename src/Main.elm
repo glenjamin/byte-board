@@ -12,9 +12,3 @@ main =
         , view = BB.view
         , subscriptions = BB.subscriptions
         }
-
-
-
---positions : Signal BB.Action
---positions =
---  Signal.map2 BB.Position Mouse.position Window.dimensions
