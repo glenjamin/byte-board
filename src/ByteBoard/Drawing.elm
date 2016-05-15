@@ -1,4 +1,4 @@
-module ByteBoard.Drawing exposing (Form, init, draw, view)
+module ByteBoard.Drawing exposing (Model, Msg(..), init, update, view)
 
 import String
 import Color exposing (Color)
@@ -6,8 +6,14 @@ import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
 import Svg exposing (Svg, svg, path, circle)
 import Svg.Attributes as Attr
+import Stuff exposing (push)
 import ByteBoard.Types exposing (Size, Position)
 import ByteBoard.Tools as Tools
+
+
+type alias Model =
+    { drawings : List Form
+    }
 
 
 type Form
@@ -15,19 +21,30 @@ type Form
     | Line Position
 
 
-init : List Form
+init : Model
 init =
-    [ Blob { x = 100, y = 100 } ]
+    { drawings = [ Blob { x = 100, y = 100 } ] }
 
 
-draw : Tools.Tool -> Position -> Form
-draw tool pos =
-    case tool of
-        Tools.Blob ->
-            Blob pos
+type Msg
+    = Click Tools.Tool Position
 
-        Tools.Line ->
-            Line pos
+
+update : Msg -> Model -> Model
+update msg model =
+    { model | drawings = push model.drawings (draw msg) }
+
+
+draw : Msg -> Form
+draw msg =
+    case msg of
+        Click tool pos ->
+            case tool of
+                Tools.Blob ->
+                    Blob pos
+
+                Tools.Line ->
+                    Line pos
 
 
 gridBg : String
@@ -41,11 +58,11 @@ gridBg =
     """
 
 
-view : Size -> List Form -> Html msg
-view { width, height } forms =
+view : Size -> Model -> Html msg
+view { width, height } { drawings } =
     div [ Attr.style gridBg ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
-            (List.map viewForm forms)
+            (List.map viewForm drawings)
         ]
 
 

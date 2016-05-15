@@ -6,7 +6,7 @@ import Html exposing (Html, p, div, code, br, button, text)
 import Html.App as Html
 import Html.Events exposing (on, onClick)
 import Html.Attributes as Attr
-import Stuff exposing ((=>), (??), push, tuplemap2)
+import Stuff exposing ((=>), (??), tuplemap2)
 import Task
 import Window
 import ByteBoard.Types exposing (Size, Position)
@@ -17,7 +17,7 @@ import ByteBoard.Tools as Tools
 type alias Model =
     { window : Size
     , mouse : Position
-    , drawing : List Drawing.Form
+    , drawing : Drawing.Model
     , tool : Tools.Tool
     }
 
@@ -52,8 +52,8 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update action model =
-    ( pureUpdate action model, Cmd.none )
+update msg model =
+    ( pureUpdate msg model, Cmd.none )
 
 
 pureUpdate : Msg -> Model -> Model
@@ -66,10 +66,14 @@ pureUpdate msg model =
             { model | tool = tool }
 
         Click ->
-            { model
-                | drawing =
-                    push model.drawing (Drawing.draw model.tool model.mouse)
-            }
+            let
+                drawingMsg =
+                    (Drawing.Click model.tool model.mouse)
+
+                drawing =
+                    Drawing.update drawingMsg model.drawing
+            in
+                { model | drawing = drawing }
 
         WindowSize size ->
             { model | window = size }
@@ -121,12 +125,17 @@ view model =
 
 viewSidebar : Model -> Html Msg
 viewSidebar { window, mouse, tool } =
-    div [ Attr.style [ "padding" => "10px" ] ]
-        [ code [] [ text <| toString window ]
-        , br [] []
-        , code [] [ text <| toString mouse ]
-        , Html.map ChangeTool (Tools.view tool)
-        ]
+    let
+        { width, height } =
+            window
+
+        { x, y } =
+            mouse
+    in
+        div [ Attr.style [ "padding" => "10px" ] ]
+            [ code [] [ text <| toString ( x, y ) ]
+            , Html.map ChangeTool (Tools.view tool)
+            ]
 
 
 px : number -> String
