@@ -4,26 +4,29 @@ import String
 import Color exposing (Color)
 import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
-import Svg exposing (Svg, svg, path, circle)
+import Svg exposing (Svg, svg, text, path, circle)
 import Svg.Attributes as Attr
-import Stuff exposing (push)
-import ByteBoard.Types exposing (Size, Position)
+import Stuff exposing (push, maybePush)
+import ByteBoard.Types exposing (Size, Position, delta)
 import ByteBoard.Tools as Tools
 
 
 type alias Model =
-    { drawings : List Form
+    { pending : Maybe (List Position)
+    , drawings : List Form
     }
 
 
 type Form
     = Blob Position
-    | Line Position
+    | Line Position Position
 
 
 init : Model
 init =
-    { drawings = [ Blob { x = 100, y = 100 } ] }
+    { pending = Nothing
+    , drawings = [ Blob { x = 100, y = 100 } ]
+    }
 
 
 type Msg
@@ -32,19 +35,42 @@ type Msg
 
 update : Msg -> Model -> Model
 update msg model =
-    { model | drawings = push model.drawings (draw msg) }
-
-
-draw : Msg -> Form
-draw msg =
     case msg of
         Click tool pos ->
             case tool of
                 Tools.Blob ->
-                    Blob pos
+                    drawBlob pos model
 
                 Tools.Line ->
-                    Line pos
+                    drawLine pos model
+
+
+drawBlob : Position -> Model -> Model
+drawBlob pos model =
+    { model
+        | pending = Nothing
+        , drawings = push model.drawings (Blob pos)
+    }
+
+
+drawLine : Position -> Model -> Model
+drawLine pos model =
+    case model.pending of
+        Nothing ->
+            { model | pending = Just [ pos ] }
+
+        Just points ->
+            { model
+                | pending = Nothing
+                , drawings = maybePush model.drawings (finishLine pos points)
+            }
+
+
+finishLine : Position -> List Position -> Maybe Form
+finishLine pos points =
+    points
+        |> List.head
+        |> Maybe.map (\x -> Line x (delta pos x))
 
 
 gridBg : String
@@ -58,12 +84,20 @@ gridBg =
     """
 
 
-view : Size -> Model -> Html msg
-view { width, height } { drawings } =
+view : Size -> Position -> Model -> Html msg
+view { width, height } mouse { pending, drawings } =
     div [ Attr.style gridBg ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
-            (List.map viewForm drawings)
+            (List.map viewForm drawings
+                |> (flip maybePush (viewPending pending mouse))
+            )
         ]
+
+
+viewPending : Maybe (List Position) -> Position -> Maybe (Svg msg)
+viewPending points pos =
+    Maybe.andThen points (finishLine pos)
+        |> Maybe.map viewForm
 
 
 (=+) : (String -> Svg.Attribute msg) -> a -> Svg.Attribute msg
@@ -98,9 +132,9 @@ viewForm form =
                 ]
                 []
 
-        Line { x, y } ->
+        Line start delta ->
             path
-                [ makePath [ (MoveTo 0 0), (PathTo x y) ]
+                [ makePath [ MoveTo start.x start.y, PathTo delta.x delta.y ]
                 , Attr.stroke 🖌 Color.blue
                 , Attr.strokeWidth =+ 5
                 ]

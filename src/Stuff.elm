@@ -13,6 +13,16 @@ push l x =
     l ++ [ x ]
 
 
+maybePush : List a -> Maybe a -> List a
+maybePush l x =
+    case x of
+        Nothing ->
+            l
+
+        Just x ->
+            push l x
+
+
 (??) : Bool -> Html msg -> Html msg
 (??) condition body =
     if condition then

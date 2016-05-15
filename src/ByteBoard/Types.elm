@@ -1,4 +1,4 @@
-module ByteBoard.Types exposing (Position, Size)
+module ByteBoard.Types exposing (Position, Size, delta)
 
 
 type alias Position =
@@ -7,3 +7,8 @@ type alias Position =
 
 type alias Size =
     { width : Int, height : Int }
+
+
+delta : Position -> Position -> Position
+delta a b =
+    { x = a.x - b.x, y = a.y - b.y }

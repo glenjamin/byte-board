@@ -86,7 +86,7 @@ view model =
             model.window
 
         sidebarW =
-            300
+            200
 
         canvasSize =
             { height = height, width = max 0 (width - sidebarW) }
@@ -106,7 +106,7 @@ view model =
                     [ onClick Click
                     , onMouseMove MousePosition
                     ]
-                    [ Drawing.view canvasSize model.drawing
+                    [ Drawing.view canvasSize model.mouse model.drawing
                     ]
                 ]
             , div
