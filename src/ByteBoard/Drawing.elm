@@ -12,7 +12,8 @@ import ByteBoard.Tools as Tools
 
 
 type alias Model =
-    { pending : Maybe (List Position)
+    { tool : Tools.Tool
+    , pending : List Position
     , drawings : List Form
     }
 
@@ -22,55 +23,46 @@ type Form
     | Line Position Position
 
 
-init : Model
-init =
-    { pending = Nothing
+init : Tools.Tool -> Model
+init tool =
+    { tool = tool
+    , pending = []
     , drawings = [ Blob { x = 100, y = 100 } ]
     }
 
 
 type Msg
-    = Click Tools.Tool Position
+    = Tool Tools.Tool
+    | Click Position
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        Click tool pos ->
-            case tool of
-                Tools.Blob ->
-                    drawBlob pos model
+        Tool tool ->
+            { model | tool = tool }
 
-                Tools.Line ->
-                    drawLine pos model
+        Click pos ->
+            case draw model pos of
+                Nothing ->
+                    { model | pending = push model.pending pos }
 
-
-drawBlob : Position -> Model -> Model
-drawBlob pos model =
-    { model
-        | pending = Nothing
-        , drawings = push model.drawings (Blob pos)
-    }
+                Just form ->
+                    { model
+                        | pending = []
+                        , drawings = push model.drawings form
+                    }
 
 
-drawLine : Position -> Model -> Model
-drawLine pos model =
-    case model.pending of
-        Nothing ->
-            { model | pending = Just [ pos ] }
+draw : Model -> Position -> Maybe Form
+draw { tool, pending } pos =
+    case tool of
+        Tools.Blob ->
+            Just (Blob pos)
 
-        Just points ->
-            { model
-                | pending = Nothing
-                , drawings = maybePush model.drawings (finishLine pos points)
-            }
-
-
-finishLine : Position -> List Position -> Maybe Form
-finishLine pos points =
-    points
-        |> List.head
-        |> Maybe.map (\x -> Line x (delta pos x))
+        Tools.Line ->
+            List.head pending
+                |> Maybe.map (\x -> Line x (delta pos x))
 
 
 canvasStyle : String
@@ -86,19 +78,13 @@ canvasStyle =
 
 
 view : Size -> Position -> Model -> Html msg
-view { width, height } mouse { pending, drawings } =
+view { width, height } mouse model =
     div [ Attr.style canvasStyle ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
-            (List.map viewForm drawings
-                |> (flip maybePush (viewPending pending mouse))
+            (maybePush (List.map viewForm model.drawings)
+                (Maybe.map viewForm (draw model mouse))
             )
         ]
-
-
-viewPending : Maybe (List Position) -> Position -> Maybe (Svg msg)
-viewPending points pos =
-    Maybe.andThen points (finishLine pos)
-        |> Maybe.map viewForm
 
 
 (=+) : (String -> Svg.Attribute msg) -> a -> Svg.Attribute msg
