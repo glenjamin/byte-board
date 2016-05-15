@@ -2,35 +2,32 @@ module ByteBoard exposing (init, subscriptions, update, view)
 
 import Debug
 import Json.Decode as Json exposing ((:=))
-import Html exposing (Html, p, div, button, text)
+import Html exposing (Html, p, div, code, br, button, text)
+import Html.App as Html
 import Html.Events exposing (on, onClick)
 import Html.Attributes as Attr
 import Stuff exposing ((=>), (??), push, tuplemap2)
 import Task
 import Window
-import ByteBoard.Drawing exposing (Form(..), viewForms)
+import ByteBoard.Types exposing (Size, Position)
+import ByteBoard.Drawing as Drawing
+import ByteBoard.Tools as Tools
 
 
 type alias Model =
     { window : Size
     , mouse : Position
-    , forms : List Form
+    , drawing : List Drawing.Form
+    , tool : Tools.Tool
     }
-
-
-type alias Position =
-    { x : Int, y : Int }
-
-
-type alias Size =
-    Window.Size
 
 
 init : ( Model, Cmd Msg )
 init =
     { window = { width = 0, height = 0 }
     , mouse = { x = 0, y = 0 }
-    , forms = [ Blob { x = -100, y = 100 } ]
+    , drawing = Drawing.init
+    , tool = Tools.init
     }
         ! [ initialWindowSize ]
 
@@ -49,6 +46,7 @@ subscriptions model =
 
 type Msg
     = Click
+    | ChangeTool Tools.Tool
     | MousePosition Position
     | WindowSize Size
 
@@ -64,8 +62,14 @@ pureUpdate msg model =
         MousePosition pos ->
             { model | mouse = pos }
 
+        ChangeTool tool ->
+            { model | tool = tool }
+
         Click ->
-            { model | forms = push model.forms (Blob model.mouse) }
+            { model
+                | drawing =
+                    push model.drawing (Drawing.draw model.tool model.mouse)
+            }
 
         WindowSize size ->
             { model | window = size }
@@ -74,17 +78,14 @@ pureUpdate msg model =
 view : Model -> Html Msg
 view model =
     let
-        { window, mouse, forms } =
-            model
-
         { width, height } =
-            window
+            model.window
 
         sidebarW =
             300
 
-        canvasW =
-            width - sidebarW
+        canvasSize =
+            { height = height, width = max 0 (width - sidebarW) }
     in
         div []
             [ div
@@ -101,8 +102,7 @@ view model =
                     [ onClick Click
                     , onMouseMove MousePosition
                     ]
-                    [ (width > 0)
-                        ?? viewForms ( canvasW, height ) model.forms
+                    [ Drawing.view canvasSize model.drawing
                     ]
                 ]
             , div
@@ -112,6 +112,7 @@ view model =
                     , "bottom" => "0"
                     , "width" => px sidebarW
                     , "right" => "0"
+                    , "borderLeft" => "1px solid #999"
                     ]
                 ]
                 [ viewSidebar model ]
@@ -119,10 +120,12 @@ view model =
 
 
 viewSidebar : Model -> Html Msg
-viewSidebar { window, mouse } =
-    div []
-        [ p [] [ text <| toString window ]
-        , p [] [ text <| toString mouse ]
+viewSidebar { window, mouse, tool } =
+    div [ Attr.style [ "padding" => "10px" ] ]
+        [ code [] [ text <| toString window ]
+        , br [] []
+        , code [] [ text <| toString mouse ]
+        , Html.map ChangeTool (Tools.view tool)
         ]
 
 

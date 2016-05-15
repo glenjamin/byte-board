@@ -1,18 +1,33 @@
-module ByteBoard.Drawing exposing (Form(..), viewForms)
+module ByteBoard.Drawing exposing (Form, init, draw, view)
 
+import String
 import Color exposing (Color)
 import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
-import Svg exposing (Svg, svg, circle)
+import Svg exposing (Svg, svg, path, circle)
 import Svg.Attributes as Attr
-
-
-type alias Position =
-    { x : Int, y : Int }
+import ByteBoard.Types exposing (Size, Position)
+import ByteBoard.Tools as Tools
 
 
 type Form
     = Blob Position
+    | Line Position
+
+
+init : List Form
+init =
+    [ Blob { x = 100, y = 100 } ]
+
+
+draw : Tools.Tool -> Position -> Form
+draw tool pos =
+    case tool of
+        Tools.Blob ->
+            Blob pos
+
+        Tools.Line ->
+            Line pos
 
 
 gridBg : String
@@ -26,8 +41,8 @@ gridBg =
     """
 
 
-viewForms : ( Int, Int ) -> List Form -> Html msg
-viewForms ( width, height ) forms =
+view : Size -> List Form -> Html msg
+view { width, height } forms =
     div [ Attr.style gridBg ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
             (List.map viewForm forms)
@@ -65,3 +80,32 @@ viewForm form =
                 , Attr.fill 🖌 Color.red
                 ]
                 []
+
+        Line { x, y } ->
+            path
+                [ makePath [ (MoveTo 0 0), (PathTo x y) ]
+                , Attr.stroke 🖌 Color.blue
+                , Attr.strokeWidth =+ 5
+                ]
+                []
+
+
+type Path
+    = MoveTo Int Int
+    | PathTo Int Int
+
+
+makePath : List Path -> Svg.Attribute a
+makePath paths =
+    paths
+        |> List.concatMap
+            (\p ->
+                case p of
+                    MoveTo x y ->
+                        [ "m", toString x, toString y ]
+
+                    PathTo x y ->
+                        [ "l", toString x, toString y ]
+            )
+        |> String.join " "
+        |> Attr.d
