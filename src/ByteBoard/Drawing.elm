@@ -73,9 +73,10 @@ finishLine pos points =
         |> Maybe.map (\x -> Line x (delta pos x))
 
 
-gridBg : String
-gridBg =
+canvasStyle : String
+canvasStyle =
     """
+        cursor: crosshair;
         background-position: -1px -1px;
         background-image:
             linear-gradient(to right, #ccc 1px, transparent 1px),
@@ -86,7 +87,7 @@ gridBg =
 
 view : Size -> Position -> Model -> Html msg
 view { width, height } mouse { pending, drawings } =
-    div [ Attr.style gridBg ]
+    div [ Attr.style canvasStyle ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
             (List.map viewForm drawings
                 |> (flip maybePush (viewPending pending mouse))

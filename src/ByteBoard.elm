@@ -46,6 +46,7 @@ subscriptions model =
 
 type Msg
     = Click
+    | Clear
     | ChangeTool Tools.Tool
     | MousePosition Position
     | WindowSize Size
@@ -62,6 +63,9 @@ pureUpdate msg model =
         MousePosition pos ->
             { model | mouse = pos }
 
+        Clear ->
+            { model | drawing = Drawing.init }
+
         ChangeTool tool ->
             { model | tool = tool }
 
@@ -69,11 +73,8 @@ pureUpdate msg model =
             let
                 drawingMsg =
                     (Drawing.Click model.tool model.mouse)
-
-                drawing =
-                    Drawing.update drawingMsg model.drawing
             in
-                { model | drawing = drawing }
+                { model | drawing = Drawing.update drawingMsg model.drawing }
 
         WindowSize size ->
             { model | window = size }
@@ -133,7 +134,9 @@ viewSidebar { window, mouse, tool } =
             mouse
     in
         div [ Attr.style [ "padding" => "10px" ] ]
-            [ code [] [ text <| toString ( x, y ) ]
+            [ code [ Attr.style [ "display" => "block" ] ]
+                [ text <| toString ( x, y ) ]
+            , button [ onClick Clear ] [ text "Clear" ]
             , Html.map ChangeTool (Tools.view tool)
             ]
 
