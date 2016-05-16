@@ -12,8 +12,7 @@ import ByteBoard.Tools as Tools
 
 
 type alias Model =
-    { tool : Tools.Tool
-    , pending : List Position
+    { pending : List Position
     , drawings : List Form
     }
 
@@ -25,38 +24,43 @@ type Form
 
 init : Tools.Tool -> Model
 init tool =
-    { tool = tool
-    , pending = []
+    { pending = []
     , drawings = [ Blob { x = 100, y = 100 } ]
     }
 
 
 type Msg
-    = Tool Tools.Tool
-    | Click Position
+    = Click Position
 
 
-update : Msg -> Model -> Model
-update msg model =
+
+-- TODO: have own messages, (Click tool pos) via `view`
+
+
+update : Msg -> Tools.Tool -> Model -> Model
+update msg tool model =
     case msg of
-        Tool tool ->
-            { model | tool = tool }
-
         Click pos ->
-            case draw model pos of
-                Nothing ->
-                    { model | pending = push model.pending pos }
+            if tool == Tools.Select then
+                model
+            else
+                case draw model tool pos of
+                    Nothing ->
+                        { model | pending = push model.pending pos }
 
-                Just form ->
-                    { model
-                        | pending = []
-                        , drawings = push model.drawings form
-                    }
+                    Just form ->
+                        { model
+                            | pending = []
+                            , drawings = push model.drawings form
+                        }
 
 
-draw : Model -> Position -> Maybe Form
-draw { tool, pending } pos =
+draw : Model -> Tools.Tool -> Position -> Maybe Form
+draw { pending } tool pos =
     case tool of
+        Tools.Select ->
+            Nothing
+
         Tools.Blob ->
             Just (Blob pos)
 
@@ -77,12 +81,12 @@ canvasStyle =
     """
 
 
-view : Size -> Position -> Model -> Html msg
-view { width, height } mouse model =
+view : Size -> Tools.Tool -> Position -> Model -> Html msg
+view { width, height } tool mouse model =
     div [ Attr.style canvasStyle ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
             (maybePush (List.map viewForm model.drawings)
-                (Maybe.map viewForm (draw model mouse))
+                (Maybe.map viewForm (draw model tool mouse))
             )
         ]
 

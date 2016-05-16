@@ -7,15 +7,17 @@ import Stuff exposing ((=>))
 
 
 type Tool
-    = Blob
+    = Select
+    | Blob
     | Line
 
 
 init : Tool
 init =
-    Blob
+    Select
 
 
+listStyle : Html.Attribute a
 listStyle =
     Attr.style
         [ "list-style-type" => "none"
@@ -27,11 +29,13 @@ listStyle =
 view : Tool -> Html Tool
 view tool =
     ul [ listStyle ]
-        [ viewTool tool Blob
+        [ viewTool tool Select
+        , viewTool tool Blob
         , viewTool tool Line
         ]
 
 
+itemStyle : Bool -> Html.Attribute a
 itemStyle selected =
     Attr.style
         ([ "padding" => "5px"

@@ -58,24 +58,21 @@ update msg model =
 
 
 pureUpdate : Msg -> Model -> Model
-pureUpdate msg model =
+pureUpdate msg ({ tool, drawing, mouse } as model) =
     case msg of
         MousePosition pos ->
             { model | mouse = pos }
 
         Clear ->
-            { model | drawing = Drawing.init model.tool }
+            { model | drawing = Drawing.init tool }
 
         ChangeTool tool ->
-            { model
-                | tool = tool
-                , drawing = Drawing.update (Drawing.Tool tool) model.drawing
-            }
+            { model | tool = tool }
 
         Click ->
             { model
                 | drawing =
-                    Drawing.update (Drawing.Click model.mouse) model.drawing
+                    Drawing.update (Drawing.Click mouse) tool drawing
             }
 
         WindowSize size ->
@@ -83,10 +80,10 @@ pureUpdate msg model =
 
 
 view : Model -> Html Msg
-view model =
+view ({ tool, mouse, drawing, window } as model) =
     let
         { width, height } =
-            model.window
+            window
 
         sidebarW =
             200
@@ -109,7 +106,7 @@ view model =
                     [ onClick Click
                     , onMouseMove MousePosition
                     ]
-                    [ Drawing.view canvasSize model.mouse model.drawing
+                    [ Drawing.view canvasSize tool mouse drawing
                     ]
                 ]
             , div
