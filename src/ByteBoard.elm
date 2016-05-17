@@ -26,7 +26,7 @@ init : ( Model, Cmd Msg )
 init =
     { window = { width = 0, height = 0 }
     , mouse = { x = 0, y = 0 }
-    , drawing = Drawing.init Tools.init
+    , drawing = Drawing.init
     , tool = Tools.init
     }
         ! [ initialWindowSize ]
@@ -64,15 +64,18 @@ pureUpdate msg ({ tool, drawing, mouse } as model) =
             { model | mouse = pos }
 
         Clear ->
-            { model | drawing = Drawing.init tool }
+            { model | drawing = Drawing.init }
 
         ChangeTool tool ->
-            { model | tool = tool }
+            { model
+                | tool = tool
+                , drawing = Drawing.update Drawing.Abort drawing
+            }
 
         Click ->
             { model
                 | drawing =
-                    Drawing.update (Drawing.Click mouse) tool drawing
+                    Drawing.update (Drawing.Click tool mouse) drawing
             }
 
         WindowSize size ->

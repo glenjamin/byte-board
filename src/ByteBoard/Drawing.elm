@@ -22,25 +22,29 @@ type Form
     | Line Position Position
 
 
-init : Tools.Tool -> Model
-init tool =
+init : Model
+init =
     { pending = []
     , drawings = [ Blob { x = 100, y = 100 } ]
     }
 
 
 type Msg
-    = Click Position
+    = Abort
+    | Click Tools.Tool Position
 
 
 
 -- TODO: have own messages, (Click tool pos) via `view`
 
 
-update : Msg -> Tools.Tool -> Model -> Model
-update msg tool model =
+update : Msg -> Model -> Model
+update msg model =
     case msg of
-        Click pos ->
+        Abort ->
+            { model | pending = init.pending }
+
+        Click tool pos ->
             if tool == Tools.Select then
                 model
             else
