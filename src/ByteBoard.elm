@@ -1,7 +1,6 @@
 module ByteBoard exposing (init, subscriptions, update, view)
 
 import Debug
-import Json.Decode as Json exposing ((:=))
 import Html exposing (Html, p, div, code, br, button, text)
 import Html.App as Html
 import Html.Events exposing (on, onClick)
@@ -16,7 +15,6 @@ import ByteBoard.Tools as Tools
 
 type alias Model =
     { window : Size
-    , mouse : Position
     , drawing : Drawing.Model
     , tool : Tools.Tool
     }
@@ -25,7 +23,6 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     { window = { width = 0, height = 0 }
-    , mouse = { x = 0, y = 0 }
     , drawing = Drawing.init
     , tool = Tools.init
     }
@@ -45,10 +42,9 @@ subscriptions model =
 
 
 type Msg
-    = Click
-    | Clear
+    = Clear
     | ChangeTool Tools.Tool
-    | MousePosition Position
+    | DrawingMsg Drawing.Msg
     | WindowSize Size
 
 
@@ -58,11 +54,8 @@ update msg model =
 
 
 pureUpdate : Msg -> Model -> Model
-pureUpdate msg ({ tool, drawing, mouse } as model) =
+pureUpdate msg ({ tool, drawing } as model) =
     case msg of
-        MousePosition pos ->
-            { model | mouse = pos }
-
         Clear ->
             { model | drawing = Drawing.init }
 
@@ -72,18 +65,15 @@ pureUpdate msg ({ tool, drawing, mouse } as model) =
                 , drawing = Drawing.update Drawing.Abort drawing
             }
 
-        Click ->
-            { model
-                | drawing =
-                    Drawing.update (Drawing.Click tool mouse) drawing
-            }
+        DrawingMsg drawingMsg ->
+            { model | drawing = Drawing.update drawingMsg drawing }
 
         WindowSize size ->
             { model | window = size }
 
 
 view : Model -> Html Msg
-view ({ tool, mouse, drawing, window } as model) =
+view ({ tool, drawing, window } as model) =
     let
         { width, height } =
             window
@@ -105,12 +95,8 @@ view ({ tool, mouse, drawing, window } as model) =
                     , "overflow" => "hidden"
                     ]
                 ]
-                [ div
-                    [ onClick Click
-                    , onMouseMove MousePosition
-                    ]
-                    [ Drawing.view canvasSize tool mouse drawing
-                    ]
+                [ Html.map DrawingMsg
+                    (Drawing.view canvasSize tool drawing)
                 ]
             , div
                 [ Attr.style
@@ -127,13 +113,10 @@ view ({ tool, mouse, drawing, window } as model) =
 
 
 viewSidebar : Model -> Html Msg
-viewSidebar { window, mouse, tool } =
+viewSidebar { drawing, tool } =
     let
-        { width, height } =
-            window
-
         { x, y } =
-            mouse
+            Drawing.mousePos drawing
     in
         div [ Attr.style [ "padding" => "10px" ] ]
             [ code [ Attr.style [ "display" => "block" ] ]
@@ -146,13 +129,3 @@ viewSidebar { window, mouse, tool } =
 px : number -> String
 px n =
     (toString n) ++ "px"
-
-
-onMouseMove : (Position -> Msg) -> Html.Attribute Msg
-onMouseMove msg =
-    on "mousemove" (Json.map msg relativeMousePosition)
-
-
-relativeMousePosition : Json.Decoder Position
-relativeMousePosition =
-    Json.object2 Position ("offsetX" := Json.int) ("offsetY" := Json.int)

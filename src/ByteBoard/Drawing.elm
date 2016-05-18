@@ -1,9 +1,19 @@
-module ByteBoard.Drawing exposing (Model, Msg(..), init, update, view)
+module ByteBoard.Drawing
+    exposing
+        ( Model
+        , Msg(..)
+        , init
+        , update
+        , view
+        , mousePos
+        )
 
 import String
+import Json.Decode as Json exposing ((:=))
 import Color exposing (Color)
 import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
+import Html.Events exposing (onClick, on)
 import Svg exposing (Svg, svg, text, path, circle)
 import Svg.Attributes as Attr
 import Stuff exposing (push, maybePush)
@@ -11,8 +21,13 @@ import ByteBoard.Types exposing (Size, Position, delta)
 import ByteBoard.Tools as Tools
 
 
-type alias Model =
-    { pending : List Position
+type Model
+    = Model ModelData
+
+
+type alias ModelData =
+    { mouse : Position
+    , pending : List Position
     , drawings : List Form
     }
 
@@ -22,55 +37,63 @@ type Form
     | Line Position Position
 
 
+mousePos : Model -> Position
+mousePos (Model { mouse }) =
+    mouse
+
+
 init : Model
 init =
-    { pending = []
-    , drawings = [ Blob { x = 100, y = 100 } ]
-    }
+    Model
+        { mouse = { x = 0, y = 0 }
+        , pending = []
+        , drawings = [ Blob { x = 100, y = 100 } ]
+        }
 
 
 type Msg
     = Abort
-    | Click Tools.Tool Position
-
-
-
--- TODO: have own messages, (Click tool pos) via `view`
+    | Mouse Position
+    | Click Tools.Tool
 
 
 update : Msg -> Model -> Model
-update msg model =
+update msg ((Model data) as model) =
     case msg of
         Abort ->
-            { model | pending = init.pending }
+            Model { data | pending = [] }
 
-        Click tool pos ->
+        Mouse pos ->
+            Model { data | mouse = pos }
+
+        Click tool ->
             if tool == Tools.Select then
                 model
             else
-                case draw model tool pos of
+                case draw data tool of
                     Nothing ->
-                        { model | pending = push model.pending pos }
+                        Model { data | pending = push data.pending data.mouse }
 
                     Just form ->
-                        { model
-                            | pending = []
-                            , drawings = push model.drawings form
-                        }
+                        Model
+                            { data
+                                | pending = []
+                                , drawings = push data.drawings form
+                            }
 
 
-draw : Model -> Tools.Tool -> Position -> Maybe Form
-draw { pending } tool pos =
+draw : ModelData -> Tools.Tool -> Maybe Form
+draw { pending, mouse } tool =
     case tool of
         Tools.Select ->
             Nothing
 
         Tools.Blob ->
-            Just (Blob pos)
+            Just (Blob mouse)
 
         Tools.Line ->
             List.head pending
-                |> Maybe.map (\x -> Line x (delta pos x))
+                |> Maybe.map (\x -> Line x (delta mouse x))
 
 
 canvasStyle : String
@@ -85,12 +108,16 @@ canvasStyle =
     """
 
 
-view : Size -> Tools.Tool -> Position -> Model -> Html msg
-view { width, height } tool mouse model =
-    div [ Attr.style canvasStyle ]
+view : Size -> Tools.Tool -> Model -> Html Msg
+view { width, height } tool (Model model) =
+    div
+        [ Attr.style canvasStyle
+        , onClick (Click tool)
+        , onMouseMove Mouse
+        ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
             (maybePush (List.map viewForm model.drawings)
-                (Maybe.map viewForm (draw model tool mouse))
+                (Maybe.map viewForm (draw model tool))
             )
         ]
 
@@ -155,3 +182,13 @@ makePath paths =
             )
         |> String.join " "
         |> Attr.d
+
+
+onMouseMove : (Position -> Msg) -> Html.Attribute Msg
+onMouseMove msg =
+    on "mousemove" (Json.map msg relativeMousePosition)
+
+
+relativeMousePosition : Json.Decoder Position
+relativeMousePosition =
+    Json.object2 Position ("offsetX" := Json.int) ("offsetY" := Json.int)
