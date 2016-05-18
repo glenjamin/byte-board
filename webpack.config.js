@@ -5,7 +5,7 @@ var webpack = require('webpack');
 module.exports = {
   entry: [
     './src/index.js',
-    'webpack-hot-middleware/client?reload=true'
+    'webpack-hot-middleware/client'
   ],
   output: {
     path: path.join(__dirname, 'public'),
@@ -21,7 +21,7 @@ module.exports = {
       {
         test: /\.elm$/,
         exclude: [/elm-stuff/, /node_modules/],
-        loader: 'elm-webpack?warn=true&verbose=true'
+        loader: 'elm-hot!elm-webpack?warn=true&verbose=true'
       }
     ],
     noParse: /\.elm$/
