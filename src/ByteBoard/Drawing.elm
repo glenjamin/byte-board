@@ -13,7 +13,7 @@ import Json.Decode as Json exposing ((:=))
 import Color exposing (Color)
 import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
-import Html.Events exposing (onClick, on)
+import Html.Events as Events
 import Svg exposing (Svg, svg, text, path, circle)
 import Svg.Attributes as Attr
 import Stuff exposing (push, maybePush)
@@ -27,6 +27,7 @@ type Model
 
 type alias ModelData =
     { mouse : Position
+    , mouseActive : Bool
     , pending : List Position
     , drawings : List Form
     }
@@ -46,6 +47,7 @@ init : Model
 init =
     Model
         { mouse = { x = 0, y = 0 }
+        , mouseActive = False
         , pending = []
         , drawings = [ Blob { x = 100, y = 100 } ]
         }
@@ -53,6 +55,8 @@ init =
 
 type Msg
     = Abort
+    | MouseOn
+    | MouseOff
     | Mouse Position
     | Click Tools.Tool
 
@@ -62,6 +66,12 @@ update msg ((Model data) as model) =
     case msg of
         Abort ->
             Model { data | pending = [] }
+
+        MouseOn ->
+            Model { data | mouseActive = True }
+
+        MouseOff ->
+            Model { data | mouseActive = False }
 
         Mouse pos ->
             Model { data | mouse = pos }
@@ -112,12 +122,18 @@ view : Size -> Tools.Tool -> Model -> Html Msg
 view { width, height } tool (Model model) =
     div
         [ Attr.style canvasStyle
-        , onClick (Click tool)
+        , Events.onClick (Click tool)
         , onMouseMove Mouse
+        , Events.onMouseEnter MouseOn
+        , Events.onMouseLeave MouseOff
         ]
         [ svg [ Attr.width =+ width, Attr.height =+ height ]
             (maybePush (List.map viewForm model.drawings)
-                (Maybe.map viewForm (draw model tool))
+                (if model.mouseActive then
+                    (Maybe.map viewForm (draw model tool))
+                 else
+                    Nothing
+                )
             )
         ]
 
@@ -186,7 +202,7 @@ makePath paths =
 
 onMouseMove : (Position -> Msg) -> Html.Attribute Msg
 onMouseMove msg =
-    on "mousemove" (Json.map msg relativeMousePosition)
+    Events.on "mousemove" (Json.map msg relativeMousePosition)
 
 
 relativeMousePosition : Json.Decoder Position
