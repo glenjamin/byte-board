@@ -8,7 +8,7 @@ import Stuff exposing ((=>))
 
 type Tool
     = Select
-    | Blob
+    | Circle
     | Line
 
 
@@ -30,7 +30,7 @@ view : Tool -> Html Tool
 view tool =
     ul [ listStyle ]
         [ viewTool tool Select
-        , viewTool tool Blob
+        , viewTool tool Circle
         , viewTool tool Line
         ]
 

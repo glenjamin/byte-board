@@ -17,7 +17,7 @@ import Html.Events as Events
 import Svg exposing (Svg, svg, text, path, circle)
 import Svg.Attributes as Attr
 import Stuff exposing (push, maybePush)
-import ByteBoard.Types exposing (Size, Position, delta)
+import ByteBoard.Types exposing (Size, Position, delta, hypotenuse)
 import ByteBoard.Tools as Tools
 
 
@@ -33,8 +33,12 @@ type alias ModelData =
     }
 
 
+type alias Radius =
+    Int
+
+
 type Form
-    = Blob Position
+    = Circle Position Radius
     | Line Position Position
 
 
@@ -49,7 +53,7 @@ init =
         { mouse = { x = 0, y = 0 }
         , mouseActive = False
         , pending = []
-        , drawings = [ Blob { x = 100, y = 100 } ]
+        , drawings = []
         }
 
 
@@ -98,12 +102,13 @@ draw { pending, mouse } tool =
         Tools.Select ->
             Nothing
 
-        Tools.Blob ->
-            Just (Blob mouse)
+        Tools.Circle ->
+            List.head pending
+                |> Maybe.map (\a -> Circle a (hypotenuse <| delta mouse a))
 
         Tools.Line ->
             List.head pending
-                |> Maybe.map (\x -> Line x (delta mouse x))
+                |> Maybe.map (\a -> Line a (delta mouse a))
 
 
 canvasStyle : String
@@ -161,9 +166,9 @@ coloured attr value =
 viewForm : Form -> Svg msg
 viewForm form =
     case form of
-        Blob { x, y } ->
+        Circle { x, y } radius ->
             circle
-                [ Attr.r =+ 30
+                [ Attr.r =+ radius
                 , Attr.cx =+ x
                 , Attr.cy =+ y
                 , Attr.fill 🖌 Color.red

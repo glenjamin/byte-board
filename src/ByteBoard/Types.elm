@@ -1,4 +1,4 @@
-module ByteBoard.Types exposing (Position, Size, delta)
+module ByteBoard.Types exposing (Position, Size, delta, hypotenuse)
 
 
 type alias Position =
@@ -12,3 +12,8 @@ type alias Size =
 delta : Position -> Position -> Position
 delta a b =
     { x = a.x - b.x, y = a.y - b.y }
+
+
+hypotenuse : Position -> Int
+hypotenuse pos =
+    round <| sqrt <| toFloat (pos.x * pos.x + pos.y * pos.y)
