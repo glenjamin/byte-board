@@ -9,6 +9,7 @@ import Stuff exposing ((=>))
 type Tool
     = Select
     | Circle
+    | Rectangle
     | Line
 
 
@@ -31,6 +32,7 @@ view tool =
     ul [ listStyle ]
         [ viewTool tool Select
         , viewTool tool Circle
+        , viewTool tool Rectangle
         , viewTool tool Line
         ]
 

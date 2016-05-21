@@ -14,7 +14,7 @@ import Color exposing (Color)
 import Color.Convert exposing (colorToCssRgba)
 import Html exposing (Html, div)
 import Html.Events as Events
-import Svg exposing (Svg, svg, text, path, circle)
+import Svg exposing (Svg, svg, text, path, circle, rect)
 import Svg.Attributes as Attr
 import Stuff exposing (push, maybePush)
 import ByteBoard.Types exposing (Size, Position, delta, hypotenuse)
@@ -38,7 +38,8 @@ type alias Radius =
 
 
 type Form
-    = Circle Position Radius
+    = Rectangle Position Position
+    | Circle Position Radius
     | Line Position Position
 
 
@@ -98,17 +99,33 @@ update msg ((Model data) as model) =
 
 draw : ModelData -> Tools.Tool -> Maybe Form
 draw { pending, mouse } tool =
-    case tool of
-        Tools.Select ->
+    let
+        points =
+            push pending mouse
+    in
+        case tool of
+            Tools.Select ->
+                Nothing
+
+            Tools.Rectangle ->
+                -- TODO: handle negative sizes by flipping co-ords around
+                twoPoints points (\a b -> Rectangle a (delta b a))
+
+            Tools.Circle ->
+                twoPoints points (\a b -> Circle a (hypotenuse <| delta b a))
+
+            Tools.Line ->
+                twoPoints points (\a b -> Line a (delta b a))
+
+
+twoPoints : List Position -> (Position -> Position -> Form) -> Maybe Form
+twoPoints points f =
+    case List.take 2 points of
+        [ a, b ] ->
+            Just (f a b)
+
+        _ ->
             Nothing
-
-        Tools.Circle ->
-            List.head pending
-                |> Maybe.map (\a -> Circle a (hypotenuse <| delta mouse a))
-
-        Tools.Line ->
-            List.head pending
-                |> Maybe.map (\a -> Line a (delta mouse a))
 
 
 canvasStyle : String
@@ -166,6 +183,16 @@ coloured attr value =
 viewForm : Form -> Svg msg
 viewForm form =
     case form of
+        Rectangle start delta ->
+            rect
+                [ Attr.x =+ start.x
+                , Attr.y =+ start.y
+                , Attr.width =+ delta.x
+                , Attr.height =+ delta.y
+                , Attr.fill 🖌 Color.orange
+                ]
+                []
+
         Circle { x, y } radius ->
             circle
                 [ Attr.r =+ radius
