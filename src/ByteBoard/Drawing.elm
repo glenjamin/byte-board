@@ -17,7 +17,15 @@ import Html.Events as Events
 import Svg exposing (Svg, svg, text, path, circle, rect)
 import Svg.Attributes as Attr
 import Stuff exposing (push, maybePush)
-import ByteBoard.Types exposing (Size, Position, delta, hypotenuse)
+import ByteBoard.Types
+    exposing
+        ( Size
+        , Position
+        , Bounds
+        , delta
+        , hypotenuse
+        , bounds
+        )
 import ByteBoard.Tools as Tools
 
 
@@ -38,7 +46,7 @@ type alias Radius =
 
 
 type Form
-    = Rectangle Position Position
+    = Rectangle Bounds
     | Circle Position Radius
     | Line Position Position
 
@@ -109,7 +117,8 @@ draw { pending, mouse } tool =
 
             Tools.Rectangle ->
                 -- TODO: handle negative sizes by flipping co-ords around
-                twoPoints points (\a b -> Rectangle a (delta b a))
+                twoPoints points
+                    (\a b -> Rectangle (bounds a b))
 
             Tools.Circle ->
                 twoPoints points (\a b -> Circle a (hypotenuse <| delta b a))
@@ -183,12 +192,12 @@ coloured attr value =
 viewForm : Form -> Svg msg
 viewForm form =
     case form of
-        Rectangle start delta ->
+        Rectangle bounds ->
             rect
-                [ Attr.x =+ start.x
-                , Attr.y =+ start.y
-                , Attr.width =+ delta.x
-                , Attr.height =+ delta.y
+                [ Attr.x =+ bounds.x
+                , Attr.y =+ bounds.y
+                , Attr.width =+ bounds.dx
+                , Attr.height =+ bounds.dy
                 , Attr.fill 🖌 Color.orange
                 ]
                 []
