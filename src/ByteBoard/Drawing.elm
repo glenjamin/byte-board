@@ -116,9 +116,7 @@ draw { pending, mouse } tool =
                 Nothing
 
             Tools.Rectangle ->
-                -- TODO: handle negative sizes by flipping co-ords around
-                twoPoints points
-                    (\a b -> Rectangle (bounds a b))
+                twoPoints points (\a b -> Rectangle (bounds a b))
 
             Tools.Circle ->
                 twoPoints points (\a b -> Circle a (hypotenuse <| delta b a))
@@ -179,11 +177,6 @@ view { width, height } tool (Model model) =
     attr (colorToCssRgba value)
 
 
-redDot : Svg msg
-redDot =
-    circle [ Attr.fill 🖌 Color.red ] []
-
-
 coloured : (String -> Svg.Attribute msg) -> Color -> Svg.Attribute msg
 coloured attr value =
     attr (colorToCssRgba value)
@@ -215,7 +208,7 @@ viewForm form =
             path
                 [ makePath [ MoveTo start.x start.y, PathTo delta.x delta.y ]
                 , Attr.stroke 🖌 Color.blue
-                , Attr.strokeWidth =+ 5
+                , Attr.strokeWidth =+ 10
                 ]
                 []
 
