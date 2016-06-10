@@ -11,6 +11,7 @@ import Window
 import ByteBoard.Types exposing (Size, Position)
 import ByteBoard.Drawing as Drawing
 import ByteBoard.Tools as Tools
+import Native.Something
 
 
 type alias Model =
@@ -38,7 +39,11 @@ initialWindowSize =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [ Window.resizes WindowSize ]
+    let
+        _ =
+            Debug.log "native" Native.Something.whatever
+    in
+        Sub.batch [ Window.resizes WindowSize ]
 
 
 type Msg
